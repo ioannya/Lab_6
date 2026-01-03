@@ -50,6 +50,12 @@ def validate_items(items) -> None:
         if it["qty"] <= 0:
             raise ValueError("qty must be positive")
 
+def calculate_subtotal(items) -> int:
+    subtotal = 0
+    for it in items:
+        subtotal = subtotal + it["price"] * it["qty"]
+    return subtotal
+
 
 def process_checkout(request: dict) -> dict:
     user_id, items, coupon, currency = parse_request(request)
@@ -59,9 +65,7 @@ def process_checkout(request: dict) -> dict:
 
     validate_request(user_id, items)
 
-    subtotal = 0
-    for it in items:
-        subtotal = subtotal + it["price"] * it["qty"]
+    subtotal = calculate_subtotal(items)
 
     discount = 0
     if coupon is None or coupon == "":
