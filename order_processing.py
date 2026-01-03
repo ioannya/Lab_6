@@ -1,3 +1,25 @@
+DEFAULT_CURRENCY = "USD"
+
+TAX_RATE = 0.21
+
+COUPON_SAVE10 = "SAVE10"
+COUPON_SAVE20 = "SAVE20"
+COUPON_VIP = "VIP"
+
+SAVE10_RATE = 0.10
+SAVE20_RATE = 0.20
+SAVE20_FALLBACK_RATE = 0.05
+
+SAVE20_THRESHOLD = 200
+
+VIP_DISCOUNT_DEFAULT = 50
+VIP_DISCOUNT_LOW_SUBTOTAL = 10
+VIP_LOW_SUBTOTAL_THRESHOLD = 100
+
+ORDER_ID_SUFFIX = "X"
+
+
+
 def parse_request(request: dict):
     user_id = request.get("user_id")
     items = request.get("items")
@@ -14,7 +36,7 @@ def process_checkout(request: dict) -> dict:
     if items is None:
         raise ValueError("items is required")
     if currency is None:
-        currency = "USD"
+        currency = DEFAULT_CURRENCY
 
     if type(items) is not list:
         raise ValueError("items must be a list")
@@ -36,17 +58,17 @@ def process_checkout(request: dict) -> dict:
     discount = 0
     if coupon is None or coupon == "":
         discount = 0
-    elif coupon == "SAVE10":
-        discount = int(subtotal * 0.10)
-    elif coupon == "SAVE20":
-        if subtotal >= 200:
-            discount = int(subtotal * 0.20)
+    elif coupon == COUPON_SAVE10:
+        discount = int(subtotal * SAVE10_RATE)
+    elif coupon == COUPON_SAVE20:
+        if subtotal >= SAVE20_THRESHOLD:
+            discount = int(subtotal * SAVE20_RATE)
         else:
-            discount = int(subtotal * 0.05)
-    elif coupon == "VIP":
-        discount = 50
-        if subtotal < 100:
-            discount = 10
+            discount = int(subtotal * SAVE20_FALLBACK_RATE)
+    elif coupon == COUPON_VIP:
+        discount = VIP_DISCOUNT_DEFAULT
+        if subtotal < VIP_LOW_SUBTOTAL_THRESHOLD:
+            discount = VIP_DISCOUNT_LOW_SUBTOTAL
     else:
         raise ValueError("unknown coupon")
 
@@ -54,10 +76,10 @@ def process_checkout(request: dict) -> dict:
     if total_after_discount < 0:
         total_after_discount = 0
 
-    tax = int(total_after_discount * 0.21)
+    tax = int(total_after_discount * TAX_RATE)
     total = total_after_discount + tax
 
-    order_id = str(user_id) + "-" + str(len(items)) + "-" + "X"
+    order_id = str(user_id) + "-" + str(len(items)) + "-" + ORDER_ID_SUFFIX
 
     return {
         "order_id": order_id,
