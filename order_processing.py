@@ -56,6 +56,26 @@ def calculate_subtotal(items) -> int:
         subtotal = subtotal + it["price"] * it["qty"]
     return subtotal
 
+def calculate_discount(subtotal: int, coupon) -> int:
+    if coupon is None or coupon == "":
+        return 0
+
+    if coupon == COUPON_SAVE10:
+        return int(subtotal * SAVE10_RATE)
+
+    if coupon == COUPON_SAVE20:
+        if subtotal >= SAVE20_THRESHOLD:
+            return int(subtotal * SAVE20_RATE)
+        return int(subtotal * SAVE20_FALLBACK_RATE)
+
+    if coupon == COUPON_VIP:
+        discount = VIP_DISCOUNT_DEFAULT
+        if subtotal < VIP_LOW_SUBTOTAL_THRESHOLD:
+            discount = VIP_DISCOUNT_LOW_SUBTOTAL
+        return discount
+
+    raise ValueError("unknown coupon")
+
 
 def process_checkout(request: dict) -> dict:
     user_id, items, coupon, currency = parse_request(request)
@@ -67,22 +87,7 @@ def process_checkout(request: dict) -> dict:
 
     subtotal = calculate_subtotal(items)
 
-    discount = 0
-    if coupon is None or coupon == "":
-        discount = 0
-    elif coupon == COUPON_SAVE10:
-        discount = int(subtotal * SAVE10_RATE)
-    elif coupon == COUPON_SAVE20:
-        if subtotal >= SAVE20_THRESHOLD:
-            discount = int(subtotal * SAVE20_RATE)
-        else:
-            discount = int(subtotal * SAVE20_FALLBACK_RATE)
-    elif coupon == COUPON_VIP:
-        discount = VIP_DISCOUNT_DEFAULT
-        if subtotal < VIP_LOW_SUBTOTAL_THRESHOLD:
-            discount = VIP_DISCOUNT_LOW_SUBTOTAL
-    else:
-        raise ValueError("unknown coupon")
+    discount = calculate_discount(subtotal, coupon)
 
     total_after_discount = subtotal - discount
     if total_after_discount < 0:
