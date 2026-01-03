@@ -27,22 +27,21 @@ def parse_request(request: dict):
     currency = request.get("currency")
     return user_id, items, coupon, currency
 
-
-def process_checkout(request: dict) -> dict:
-    user_id, items, coupon, currency = parse_request(request)
-
+def validate_request(user_id, items) -> None:
     if user_id is None:
         raise ValueError("user_id is required")
     if items is None:
         raise ValueError("items is required")
-    if currency is None:
-        currency = DEFAULT_CURRENCY
 
-    if type(items) is not list:
+    if type(items) is not list:  # оставляем как в исходнике!
         raise ValueError("items must be a list")
     if len(items) == 0:
         raise ValueError("items must not be empty")
 
+    validate_items(items)
+
+
+def validate_items(items) -> None:
     for it in items:
         if "price" not in it or "qty" not in it:
             raise ValueError("item must have price and qty")
@@ -50,6 +49,15 @@ def process_checkout(request: dict) -> dict:
             raise ValueError("price must be positive")
         if it["qty"] <= 0:
             raise ValueError("qty must be positive")
+
+
+def process_checkout(request: dict) -> dict:
+    user_id, items, coupon, currency = parse_request(request)
+
+    if currency is None:
+        currency = DEFAULT_CURRENCY
+
+    validate_request(user_id, items)
 
     subtotal = 0
     for it in items:
